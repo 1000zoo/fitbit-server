@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Websockets and Flask Example</title>
+</head>
+<body>
+    <h1>Data from Websocket</h1>
+    <p id="data"></p>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            var url = "{{ url_for('update') }}";
+            setInterval(function(){
+                $.getJSON(url, function(response){
+                    var data = response.data;
+                    $('#data').text(data);
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

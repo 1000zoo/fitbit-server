@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>실시간 데이터 출력 예제</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>실시간 심박수</h1>
+    </header>
+    <main>
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>심박수</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <!-- 여기에 데이터가 추가됨 -->
+        </tbody>
+      </table>
+    </main>
+    <footer>
+      <script>
+        // AJAX로 데이터를 받아옴
+        function getData() {
+            $.ajax({
+                type: 'GET',
+                url: '/data',
+                success: function(response) {
+                    // 받아온 데이터를 가공하여 출력하는 코드 작성
+                    let data = response['data'];
+                    let tbody = document.getElementById('tbody');
+                    let html = '';
+                    console.log(data)
+                    for (let i in data) {
+                        let name = data[i].name;
+                        let hr = data[i].hr;
+                        console.log(i)
+                        html += '<tr><td>' + name + '</td><td>' + hr + '</td></tr>';
+                    }
+                    tbody.innerHTML = html;
+                }
+            });
+        }
+        setInterval(getData, 1000);
+      </script>
+    </footer>
+  </body>
+</html>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    background-color: #333;
+    color: white;
+    padding: 20px;
+    text-align: center;
+  }
+  main {
+    margin: 20px;
+  }
+  table {
+    border-collapse: collapse;
+    margin: 0 auto;
+    width: 80%;
+  }
+  th, td {
+    border: 1px solid black;
+    padding: 10px;
+    text-align: center;
+  }
+  th {
+    background-color: #333;
+    color: white;
+  }
+</style>
