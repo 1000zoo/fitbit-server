@@ -35,12 +35,14 @@ class Fitbit:
                 k = json.loads(message)
                 time = k['time']
                 hr_data = k['hr']
+
+                print(f"{self.name}: hr->{hr_data}, XYZ-> {k['X']}, {k['Y']}, {k['Z']}")
                 data[self.num] = {'name' : self.name, 'hr' : hr_data}
 
             except asyncio.TimeoutError:
                 # 일정 시간 이상 데이터가 도착하지 않은 경우, 루프를 다시 시작합니다.
                 print(f'{self.name}, timeout')
-                data[self.num] = {'name' : self.name, '≈hr' : '-'}
+                data[self.num] = {'name' : self.name, 'hr' : '-'}
                 continue
             
             # message의 구조:

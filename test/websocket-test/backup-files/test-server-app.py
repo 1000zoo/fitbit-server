@@ -1,6 +1,10 @@
 ## 딥러닝용 서버
 
 """
+
+"""
+
+"""
 TODO
 - 모니터링용 서버로 데이터를 보내야함
     - 일단 보내기만 하면, 기존의 웹 동작 방식때문에,
@@ -35,46 +39,49 @@ class Fitbit:
     async def receive_data(self, websocket):
         """WebSocket에서 데이터를 수신하는 코루틴"""
         print(self.name, ": receive_data")
-        async for message in websocket:
-            # message의 구조:
-            # {'time' : ~~~, 'hr' : ~~~, 'X' ...}
-            k = json.loads(message)
-            time = k['time']
-            hr = k['hr']
-            temp_data = {'name' : self.name, 'hr' : hr}
-            """
-            <-여기에 통신하는 코드 추가하면 될 듯->
-            """
+        try:
+            async for message in websocket:
+                # message의 구조:
+                # {'time' : ~~~, 'hr' : ~~~, 'X' ...}
+                k = json.loads(message)
+                time = k['time']
+                hr = k['hr']
+                temp_data = {'name' : self.name, 'hr' : hr}
+                """
+                <-여기에 통신하는 코드 추가하면 될 듯->
+                """
 
-            # 저장경로는 디바이스의 이름/날짜.txt
-            filepath = os.path.join(self.pth, get_date_for_filename())
+                # 저장경로는 디바이스의 이름/날짜.txt
+                filepath = os.path.join(self.pth, get_date_for_filename())
 
-            ## 처음 실행할 때 이전 시간 초기화
-            if self.prev_time is None:
+                ## 처음 실행할 때 이전 시간 초기화
+                if self.prev_time is None:
+                    self.prev_time = str_to_datetime(time)
+                
+                curr_time = str_to_datetime(time)
+                time_diff = (curr_time - self.prev_time).total_seconds()
+                # 현재시간과 가장 최근에 저장된 시간이 1초 보다 더 차이나면
+                # 그 사이시간의 값을 None으로 저장
+                if time_diff > 1:
+                    missing_times = int(time_diff) - 1
+                    for i in range(missing_times):
+                        missing_time = self.prev_time + datetime.timedelta(seconds=i+1)
+                        with open(filepath, 'a') as f:
+                            f.write(missing_time.strftime("%H:%M:%S") + ", None\n")
+                
+                # 만약 이전의 시간과 현재의 시간이 같다면 (같은 초 단위의 시간이 들어올 때)
+                # skip
+                elif time_diff == 0:
+                    continue
+
+                with open(filepath, 'a') as f:
+                    f.write(time + ", " + str(hr) + '\n')
+
+                # 가장 최근 시간을 현재의 시간으로
                 self.prev_time = str_to_datetime(time)
-            
-            curr_time = str_to_datetime(time)
-            time_diff = (curr_time - self.prev_time).total_seconds()
-            # 현재시간과 가장 최근에 저장된 시간이 1초 보다 더 차이나면
-            # 그 사이시간의 값을 None으로 저장
-            if time_diff > 1:
-                missing_times = int(time_diff) - 1
-                for i in range(missing_times):
-                    missing_time = self.prev_time + datetime.timedelta(seconds=i+1)
-                    with open(filepath, 'a') as f:
-                        f.write(missing_time.strftime("%H:%M:%S") + ", None\n")
-            
-            # 만약 이전의 시간과 현재의 시간이 같다면 (같은 초 단위의 시간이 들어올 때)
-            # skip
-            elif time_diff == 0:
-                continue
-
-            with open(filepath, 'a') as f:
-                f.write(time + ", " + str(hr) + '\n')
-
-            # 가장 최근 시간을 현재의 시간으로
-            self.prev_time = str_to_datetime(time)
-            return
+                return
+        except OSError as err:
+            print(err)
             
 
     async def connect(self):
@@ -112,10 +119,19 @@ def check_directory():
 
 async def main():
     """여러 WebSocket 연결을 시작하는 코루틴"""
+    print("main")
     fits = [Fitbit("검은색", 'ws://192.168.0.53:8080'), Fitbit("남색", 'ws://192.168.0.37:8080')]
     tasks = [asyncio.create_task(fit.connect()) for fit in fits]
 
-    await asyncio.gather(*tasks)
+    while True:
+        try:
+            await asyncio.gather(*tasks)
+        except ConnectionRefusedError as e:
+            print(e)
+        except OSError as e:
+            print(e)
+
+
 
 # 이벤트 루프를 시작하여 주 코루틴을 실행.
 if __name__ == "__main__":

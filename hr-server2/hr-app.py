@@ -38,6 +38,7 @@ class Fitbit:
             message = await asyncio.wait_for(websocket.recv(), timeout=3.0)
             k = json.loads(message)
             data[self.num] = {'name' : self.name, 'hr' : k['hr']}
+            print(k['X'], k['Y'], k['Z'])
             return k
         except asyncio.TimeoutError:
             print(self.name, ': receive_data timed out')
