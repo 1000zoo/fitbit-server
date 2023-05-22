@@ -35,8 +35,9 @@ class Fitbit:
                 k = json.loads(message)
                 time = k['time']
                 hr_data = k['hr']
+                xyz = f"X: {k['X']}, Y: {k['Y']}, Z: {k['Z']}"
 
-                print(f"{self.name}: hr->{hr_data}, XYZ-> {k['X']}, {k['Y']}, {k['Z']}")
+                print(f"{self.name}: hr->{hr_data}, {xyz}")
                 data[self.num] = {'name' : self.name, 'hr' : hr_data}
 
             except asyncio.TimeoutError:
@@ -67,7 +68,7 @@ class Fitbit:
                 continue
 
             with open(filepath, 'a') as f:
-                f.write(time + ", " + str(hr_data) + '\n')
+                f.write(time + ", " + str(hr_data) + xyz + '\n')
 
             self.prev_time = str_to_datetime(time)
 
