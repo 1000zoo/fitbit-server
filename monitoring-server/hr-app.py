@@ -15,10 +15,16 @@ def index():
 
 @app.route('/data', methods=['GET'])
 def update():
-    get_data()
-    return jsonify({
-        'data': data,
-    })
+    try:
+        get_data()
+        return jsonify({
+            'data': data,
+        })
+    except OSError as e:
+        print(e)
+        return jsonify({
+            'data': data,
+        })
 
 def get_data():
     asyncio.run(socket())
@@ -29,6 +35,7 @@ class Fitbit:
         self.name = name
         self.uri = uri
         self._wait = True
+        self._pong = True
         data[self.num] = {'name' : self.name, "hr" : '-'}
 
     async def receive_data(self, websocket):
@@ -38,33 +45,52 @@ class Fitbit:
             message = await asyncio.wait_for(websocket.recv(), timeout=3.0)
             k = json.loads(message)
             data[self.num] = {'name' : self.name, 'hr' : k['hr']}
-            print(k['X'], k['Y'], k['Z'])
             return k
+        
         except asyncio.TimeoutError:
             print(self.name, ': receive_data timed out')
             data[self.num] = {'name' : self.name, 'hr' : '-'}
-
             return None
-
+        
+        except ConnectionRefusedError:
+            data[self.num] = {'name' : self.name, 'hr' : '-'}
+            return None
+        
     async def connect(self):
         """WebSocket에 연결하는 코루틴"""
-        async with websockets.connect(self.uri) as websocket:
-            # 서버에서 데이터를 수신합니다.
-            try:
-                k = await self.receive_data(websocket)
-                return k
-                
-            except ConnectionRefusedError as err:
-                print("대기...")
+        try:
+            async with websockets.connect(self.uri) as ws:
                 self._wait = False
-                return
-            
-            except ConnectionClosedError as e:
-                print(e, "\n서버끊김.")
-                return
+                while True:
+                    try:
+                        self._pong = False
+                        reply = await asyncio.wait_for(ws.recv(), timeout=1)
+                        k = json.loads(reply)
+                        data[self.num] = {'name' : self.name, 'hr' : k['hr']}
+                        return k
+                        
+                    except (asyncio.TimeoutError, ConnectionClosedError) as e:
+                        data[self.num] = {'name' : self.name, 'hr' : '-'}
+                        print(f"{self.name}: {e}")
+                        try:
+                            pong = await ws.ping()
+                            await asyncio.wait_for(pong, timeout=1)
+                            continue
 
-            except:
-                return
+                        except:
+                            if not self._pong:
+                                self._pong = True
+                            break
+        
+        except (ConnectionRefusedError, ConnectionClosedError) as e:
+            print(f"{self.name}: {e}")
+            data[self.num] = {'name' : self.name, 'hr' : '-'}
+            if not self._wait:
+                self._wait = True
+                print(f"{self.name}: 연결 끊김")
+
+        except:
+            data[self.num] = {'name' : self.name, 'hr' : '-'}
 
 
 fits = [Fitbit(0, "검은색", 'ws://192.168.0.53:8080'), Fitbit(1, "남색", 'ws://192.168.0.37:8080')]
@@ -76,6 +102,5 @@ async def socket():
 
 
 if __name__ == '__main__':
-    print(data)
-    app.run(host='127.0.0.1', port=9990)
+    app.run(host='127.0.0.1', port=9990, debug=True)
     
