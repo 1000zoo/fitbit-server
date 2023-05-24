@@ -18,6 +18,7 @@ class Fitbit:
         self.name = name
         self.uri = uri
         self._wait = False
+        self._pong = False
         self.pth = os.path.join(data_directory, self.name)
         self.prev_time = None
         data[self.num] = {'name' : self.name, 'hr' : '-'}
@@ -76,6 +77,7 @@ class Fitbit:
                     self._wait = False
                     while True:
                         try:
+                            self._pong = False
                             reply = await asyncio.wait_for(ws.recv(), timeout=2)
                         except (asyncio.TimeoutError, ConnectionClosedError):
                             try:
@@ -83,7 +85,9 @@ class Fitbit:
                                 await asyncio.wait_for(pong, timeout=2)
                                 continue
                             except:
-                                print("...")
+                                if not self._pong:
+                                    self._pong = True
+                                    print("...")
                                 break
                         
                         await self.receive_data(reply)
