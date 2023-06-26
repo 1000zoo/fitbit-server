@@ -51,18 +51,21 @@ class Fitbit:
         curr_time = str_to_datetime(time)
         time_diff = (curr_time - self.prev_time).total_seconds()
 
-        if time_diff > 1:
-            missing_times = int(time_diff) - 1
-            for i in range(missing_times):
-                missing_time = self.prev_time + datetime.timedelta(seconds=i+1)
-                with open(filepath, 'a') as f:
-                    f.write(missing_time.strftime("%H:%M:%S") + ", None\n")
+        # if time_diff > 1:
+        #     missing_times = int(time_diff) - 1
+        #     for i in range(missing_times):
+        #         missing_time = self.prev_time + datetime.timedelta(seconds=i+1)
+        #         with open(filepath, 'a') as f:
+        #             f.write(missing_time.strftime("%H:%M:%S") + ", None" + ", " + str(self.uri) + "\n")
 
-        elif time_diff == 0:
-            return
+        # elif time_diff == 0:
+        #     return
+
+        ip_num = self.uri.split(":")[1].split(".")[-1]
+        msg = f"{time} / {hr_data} / {ip_num}"
 
         with open(filepath, 'a') as f:
-            f.write(time + ", " + str(hr_data) + '/' + xyz + '\n')
+            f.write(msg + '\n')
 
         self.prev_time = str_to_datetime(time)
 
@@ -120,7 +123,7 @@ async def get_server():
 
 async def main():
     """여러 WebSocket 연결을 시작하는 코루틴"""
-    fits = [Fitbit(0, "검은색", 'ws://192.168.0.37:8080'), Fitbit(1, "남색", 'ws://192.168.0.53:8080')]
+    fits = [Fitbit(0, "001", 'ws://192.168.0.83:8080'), Fitbit(1, "001", 'ws://192.168.0.53:8080')]
     tasks = [asyncio.create_task(fit.connect()) for fit in fits]
 
     await get_server()
