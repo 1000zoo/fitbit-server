@@ -28,7 +28,10 @@ class Fitbit:
         self.pth = os.path.join(data_directory, self.name)
         self.prev_time = None
         self._mkdir()
-        data[self.name] = { 'time': '-', 'hr': '-', 'ip': self.ip}
+        self.set_default()
+
+    def set_default(self, state='-'):
+        data[self.name] = {'time': '-', 'hr': state, 'ip': self.ip}
 
     def _mkdir(self):
         if not os.path.exists(self.pth):
@@ -58,7 +61,7 @@ class Fitbit:
 
         with data_lock:
             data[self.name] = {'time': time, 'hr': hr_data, 'ip': self.ip}
-            send_data(k)
+            send_data()
 
         self.prev_time = str_to_datetime(time)
 
@@ -77,10 +80,12 @@ class Fitbit:
 
                         except (asyncio.TimeoutError, ConnectionClosedError):
                             try:
+                                self.set_default('wait')
                                 pong = await ws.ping()
                                 await asyncio.wait_for(pong, timeout=2)
                                 continue
                             except:
+                                self.set_default('pong')
                                 if not self._pong:
                                     self._pong = True
                                     print(f"line {cf.f_lineno}")
@@ -93,11 +98,13 @@ class Fitbit:
                         await self.receive_data(reply)
 
             except (ConnectionRefusedError, ConnectionClosedError):
+                self.set_default('X')
                 if not self._wait:
                     self._wait = True
                     print(f"{self.name}: 연결 끊김")
 
             except OSError as oserror:
+                self.set_default()
                 if not self._wait:
                     self._wait = True
                     cf = currentframe()
@@ -105,10 +112,14 @@ class Fitbit:
                     print(oserror)
 
             except:
+                self.set_default()
                 if not self._wait:
                     self._wait = True
                     cf = currentframe()
                     print(f"line {cf.f_lineno}")
+
+            finally:
+                send_data()
 
 def str_to_datetime(time_str):
     return datetime.datetime.strptime(time_str, "%H:%M:%S")
@@ -123,8 +134,13 @@ def check_directory():
     if not os.path.exists(data_directory):
         os.mkdir(data_directory)
 
-def send_data(data): ## request 로 수정
-    requests.post(monitoring_uri, data=data)
+def send_data(): ## request 로 수정
+    global data
+    try:
+        _data = json.dumps(str(data))
+        requests.post(monitoring_uri, data=_data)
+    except:
+        pass
 
 
 async def main():
