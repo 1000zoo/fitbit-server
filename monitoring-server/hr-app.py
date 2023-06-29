@@ -8,6 +8,7 @@ from websockets.exceptions import ConnectionClosedError
 
 app = Flask(__name__)
 data = {}
+keys = []
 
 @app.route('/')
 def index():
@@ -35,5 +36,9 @@ def post_data():
 
 
 if __name__ == '__main__':
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+
     app.run(host='127.0.0.1', port=9990, debug=True)
     

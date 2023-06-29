@@ -15,6 +15,9 @@
           <tr>
             <th>이름</th>
             <th>심박수</th>
+            <th>X</th>
+            <th>Y</th>
+            <th>Z</th>
             <th>ip</th>
           </tr>
         </thead>
@@ -38,8 +41,13 @@
                     for (let i in data) {
                         let name = i;
                         let hr = data[i].hr;
+                        let x = data[i].xx;
+                        let y = data[i].yy;
+                        let z = data[i].zz;
                         let ip = data[i].ip;
-                        html += '<tr><td>' + name + '</td><td>' + hr + '</td><td>' + ip + '</td></tr>';
+                        html += '<tr><td>' + name + '</td><td>' + hr +
+                          '</td><td>' + x + '</td><td>' + y + '</td><td>'+ z + 
+                          '</td><td>' + ip + '</td></tr>';
                     }
                     tbody.innerHTML = html;
                 }
