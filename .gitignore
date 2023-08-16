@@ -3,3 +3,4 @@ hr-data/
 hr-app-backup.py
 txt-test.py
 test.py
+.DS_Store
