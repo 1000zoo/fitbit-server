@@ -2,9 +2,7 @@
 
 from flask import Flask, render_template, jsonify, request, Response
 import asyncio
-import websockets
 import json
-from websockets.exceptions import ConnectionClosedError
 
 app = Flask(__name__)
 data = {}
